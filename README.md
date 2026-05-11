@@ -2,39 +2,11 @@
 
 Zero-touch Azure Local deployment on nested Hyper-V using [MSLab](https://github.com/microsoft/MSLab).
 
-## Goal
+> **日本語対応**: `Start.ps1` は日本語と英語の両方に対応しています。起動時に言語を選択できます。
 
-Plug in a USB, boot from it, and get a fully functional Azure Local (single-node) lab environment — **automatically**.
+## Getting Started
 
-```
-USB Boot → Windows Server 2025 auto-install → Hyper-V + MSLab + AD (all automatic)
-  → One-time Azure sign-in (browser) → Arc registration + cluster deploy (automatic)
-  → Ready to use from Azure Portal
-```
-
-## Deployment Flow
-
-| Phase | What happens | User action |
-|-------|-------------|-------------|
-| **Phase 1** | OS install, Hyper-V, MSLab hydration, VM deploy, AD setup | None (automatic) |
-| **Phase 2** | Azure sign-in, subscription/region selection, permission check | Sign in once via browser |
-| **Phase 3** | Arc registration, cluster deployment | None (automatic) |
-
-## Architecture
-
-| Layer | Technology |
-|-------|-----------|
-| Physical host | Dell Precision (Intel Core Ultra 7, 64GB DDR5, 1TB NVMe) |
-| Host OS | Windows Server 2025 (unattended install via `autounattend.xml`) |
-| Lab framework | [MSLab](https://github.com/microsoft/MSLab) (nested Hyper-V) |
-| Azure Local | Azure Stack HCI OS (single-node, ~20GB RAM) |
-| Azure integration | Azure Arc + ARM template for cluster deployment |
-
-## Why?
-
-Microsoft's official zero-touch provisioning ([Simplified Machine Provisioning](https://learn.microsoft.com/azure/azure-local/deploy/simplified-machine-provisioning)) is limited to specific OEM hardware (Dell AX, HPE ProLiant, Lenovo ThinkAgile) and is still in preview. This project brings zero-touch deployment to **any hardware** that can run Hyper-V, using nested virtualization.
-
-## Quick Start
+**3 commands. That's all you need.**
 
 ```powershell
 git clone https://github.com/ebibibi/azurelocal-zerotouch.git
@@ -42,23 +14,70 @@ cd azurelocal-zerotouch
 .\Start.ps1
 ```
 
-That's it. The script guides you through everything — language selection, ISO downloads, configuration, and deployment. Supports English and Japanese.
+`Start.ps1` guides you through everything:
 
-### Two Modes
+1. **Language selection** — English or Japanese (auto-detected from your system)
+2. **Mode selection** — USB creation (Mode A) or direct deployment (Mode B)
+3. **Configuration** — creates `config.ps1` from the template, lets you review and edit
+4. **ISO download guidance** — shows you exactly where to download each ISO and where to save it
+5. **Execution** — creates the USB or runs the full deployment pipeline
 
-| Mode | Use case | What happens |
-|------|----------|-------------|
-| **A) USB Creation** | Bare-metal machine with no OS | Creates a bootable USB → plug in and boot → fully automatic |
-| **B) Direct Deploy** | Windows Server already installed | Runs the deployment pipeline on this machine |
+You don't need to read this entire README to get started. Just run `Start.ps1` and follow the prompts.
 
 ### Prerequisites
 
-- **Azure subscription** with Contributor + User Access Administrator permissions
-- Two ISO files (the script tells you where to download them):
-  - Windows Server 2025 evaluation ISO — [Microsoft Evaluation Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025)
-  - Azure Local (Azure Stack HCI) ISO — [Azure Portal](https://portal.azure.com/#view/Microsoft_Azure_StackHCI/HCIGetStarted.ReactView)
-- USB drive (32GB+) — only for Mode A
-- 64GB+ RAM machine with Hyper-V support
+| Requirement | Details |
+|------------|---------|
+| **Azure subscription** | With Contributor + User Access Administrator permissions |
+| **ISO files (2)** | `Start.ps1` tells you where to download them — no need to find them yourself |
+| **Hardware** | 64GB+ RAM, Hyper-V capable (VT-x/VT-d enabled in BIOS) |
+| **USB drive** | 32GB+ — only needed for Mode A |
+
+### Two Modes
+
+| Mode | When to use | What you do |
+|------|------------|-------------|
+| **A) USB Creation** | You have a bare-metal machine with no OS | Run `Start.ps1` on any Windows PC → create USB → plug into target → boot → done |
+| **B) Direct Deploy** | Windows Server 2025 is already installed | Run `Start.ps1` on the target machine → deployment runs directly |
+
+### What Happens After You Start
+
+```
+Mode A: Start.ps1 → Create USB → Boot target machine from USB
+Mode B: Start.ps1 → Deploy directly
+                          ↓
+         ┌─────────────────────────────────────────┐
+         │  Phase 1 (automatic — no Azure needed)  │
+         │  Hyper-V install → MSLab download →     │
+         │  VHD creation → VM deploy → AD setup    │
+         └──────────────────┬──────────────────────┘
+                            ↓
+         ┌─────────────────────────────────────────┐
+         │  Phase 2 (one-time interaction)         │
+         │  Browser opens → sign in to Azure →     │
+         │  select subscription/region → done      │
+         └──────────────────┬──────────────────────┘
+                            ↓
+         ┌─────────────────────────────────────────┐
+         │  Phase 3 (automatic — Azure auth done)  │
+         │  Arc registration → cluster deployment  │
+         │  → ready to manage from Azure Portal    │
+         └─────────────────────────────────────────┘
+```
+
+## Why This Project?
+
+Microsoft's official zero-touch provisioning ([Simplified Machine Provisioning](https://learn.microsoft.com/azure/azure-local/deploy/simplified-machine-provisioning)) is limited to specific OEM hardware (Dell AX, HPE ProLiant, Lenovo ThinkAgile) and is still in preview. This project brings zero-touch deployment to **any hardware** that can run Hyper-V, using nested virtualization.
+
+## Architecture
+
+| Layer | Technology |
+|-------|-----------|
+| Physical host | Any machine with 64GB+ RAM and Hyper-V support |
+| Host OS | Windows Server 2025 (unattended install via `autounattend.xml`) |
+| Lab framework | [MSLab](https://github.com/microsoft/MSLab) (nested Hyper-V) |
+| Azure Local | Azure Stack HCI OS (single-node, ~20GB RAM) |
+| Azure integration | Azure Arc + ARM template for cluster deployment |
 
 ## Project Structure
 
