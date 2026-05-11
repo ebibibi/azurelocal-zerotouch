@@ -2,11 +2,6 @@
 <unattend xmlns="urn:schemas-microsoft-com:unattend"
           xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
 
-  <!-- ============================================================
-       Windows Server 2025 Datacenter — Unattended Install (UEFI)
-       Target: Azure Local zero-touch lab host
-       ============================================================ -->
-
   <!-- Pass 1: windowsPE — Disk partitioning and image selection -->
   <settings pass="windowsPE">
     <component name="Microsoft-Windows-International-Core-WinPE"
@@ -25,13 +20,13 @@
                processorArchitecture="amd64" language="neutral"
                publicKeyToken="31bf3856ad364e35" versionScope="nonSxS">
 
-      <!-- Auto-select Windows Server 2025 Datacenter (Desktop Experience) -->
+      <!-- Index 4 = Datacenter (Desktop Experience) in evaluation ISOs -->
       <ImageInstall>
         <OSImage>
           <InstallFrom>
             <MetaData wcm:action="add">
-              <Key>/IMAGE/NAME</Key>
-              <Value>Windows Server 2025 SERVERSTANDARD</Value>
+              <Key>/IMAGE/INDEX</Key>
+              <Value>4</Value>
             </MetaData>
           </InstallFrom>
           <InstallTo>
@@ -41,29 +36,26 @@
         </OSImage>
       </ImageInstall>
 
-      <!-- UEFI disk layout: EFI System + MSR + Windows -->
+      <!-- UEFI/GPT disk layout: EFI System + MSR + Windows -->
       <DiskConfiguration>
         <Disk wcm:action="add">
           <DiskID>0</DiskID>
           <WillWipeDisk>true</WillWipeDisk>
           <CreatePartitions>
-            <!-- EFI System Partition -->
             <CreatePartition wcm:action="add">
               <Order>1</Order>
               <Size>260</Size>
-              <Type>EF00</Type>
+              <Type>EFI</Type>
             </CreatePartition>
-            <!-- Microsoft Reserved Partition -->
             <CreatePartition wcm:action="add">
               <Order>2</Order>
               <Size>128</Size>
-              <Type>0C01</Type>
+              <Type>MSR</Type>
             </CreatePartition>
-            <!-- Windows Partition (use all remaining space) -->
             <CreatePartition wcm:action="add">
               <Order>3</Order>
               <Extend>true</Extend>
-              <Type>0700</Type>
+              <Type>Primary</Type>
             </CreatePartition>
           </CreatePartitions>
           <ModifyPartitions>
@@ -90,7 +82,6 @@
       <UserData>
         <AcceptEula>true</AcceptEula>
         <ProductKey>
-          <!-- Evaluation key (no product key needed for eval) -->
           <WillShowUI>OnError</WillShowUI>
         </ProductKey>
       </UserData>
@@ -155,7 +146,6 @@
         <LogonCount>3</LogonCount>
       </AutoLogon>
 
-      <!-- Run deployment after first login -->
       <FirstLogonCommands>
         <SynchronousCommand wcm:action="add">
           <Order>1</Order>
