@@ -150,7 +150,12 @@ if ($confirm -ne 'yes') {
 # --- Mount Windows Server ISO ---
 Write-Host "Mounting Windows Server ISO..." -ForegroundColor Cyan
 $wsISO = Mount-DiskImage -ImagePath (Resolve-Path $WindowsServerISO).Path -PassThru
-$wsLetter = (Get-Volume -DiskImage $wsISO).DriveLetter
+$wsLetter = $null
+for ($attempt = 0; $attempt -lt 10 -and -not $wsLetter; $attempt++) {
+    Start-Sleep -Seconds 1
+    $wsLetter = (Get-Volume -DiskImage $wsISO).DriveLetter
+}
+if (-not $wsLetter) { throw "Failed to get drive letter for mounted Windows Server ISO." }
 $wsRoot = "$($wsLetter):\"
 
 try {
@@ -181,8 +186,12 @@ try {
 
     # --- Copy install.wim to NTFS partition ---
     Write-Host "Copying install.wim to NTFS partition (this may take a few minutes)..." -ForegroundColor Cyan
+    $installWimPath = "$wsRoot\sources\install.wim"
+    if (-not (Test-Path $installWimPath)) {
+        throw "install.wim not found at $installWimPath. The ISO may use install.esd instead, which is not supported."
+    }
     New-Item -Path "${dataLetter}:\sources" -ItemType Directory -Force | Out-Null
-    Copy-Item -Path "$wsRoot\sources\install.wim" -Destination "${dataLetter}:\sources\install.wim" -Force
+    Copy-Item -Path $installWimPath -Destination "${dataLetter}:\sources\install.wim" -Force
 
     # --- Copy autounattend.xml ---
     Write-Host "Adding autounattend.xml..." -ForegroundColor Cyan

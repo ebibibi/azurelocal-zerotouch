@@ -10,7 +10,10 @@ if (-not $hyperv) {
     $hyperv = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -ErrorAction SilentlyContinue
 }
 
-if ($hyperv -and (-not $hyperv.Installed) -and ($hyperv.State -ne 'Enabled')) {
+if (-not $hyperv) {
+    Write-Error "Could not detect Hyper-V status. Neither Get-WindowsFeature nor Get-WindowsOptionalFeature returned results."
+    return
+} elseif ((-not $hyperv.Installed) -and ($hyperv.State -ne 'Enabled')) {
     Write-Host "Installing Hyper-V..." -ForegroundColor Cyan
     if (Get-Command Install-WindowsFeature -ErrorAction SilentlyContinue) {
         Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false

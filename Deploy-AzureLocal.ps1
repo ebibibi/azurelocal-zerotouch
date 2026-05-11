@@ -57,7 +57,16 @@ function Invoke-Stage {
     }
     Write-Host "[$Name] Starting..." -ForegroundColor Cyan
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    & (Join-Path $scriptsDir $Script)
+    try {
+        & (Join-Path $scriptsDir $Script)
+        if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+            throw "Stage '$Name' exited with code $LASTEXITCODE"
+        }
+    } catch {
+        $sw.Stop()
+        Write-Error "[$Name] Failed after $($sw.Elapsed.ToString('mm\:ss')): $_"
+        throw
+    }
     $sw.Stop()
     Write-Host "[$Name] Completed in $($sw.Elapsed.ToString('mm\:ss'))." -ForegroundColor Green
 }

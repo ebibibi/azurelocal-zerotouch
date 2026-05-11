@@ -1,6 +1,8 @@
 #Requires -RunAsAdministrator
 # Stage 4: Prepare Active Directory — Create OUs and LCM user for Azure Local
 
+$ErrorActionPreference = 'Stop'
+
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
 
@@ -9,12 +11,11 @@ $LCMCredentials = New-Object System.Management.Automation.PSCredential ($LCMUser
 
 Write-Host "Creating Active Directory objects for Azure Local..." -ForegroundColor Cyan
 
-# Install prerequisites
+Write-Host "Installing prerequisites..." -ForegroundColor Gray
 Install-PackageProvider -Name NuGet -Force -ErrorAction SilentlyContinue
-Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force -ErrorAction SilentlyContinue
-Install-WindowsFeature -Name RSAT-AD-PowerShell, GPMC -ErrorAction SilentlyContinue
+Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
+Install-WindowsFeature -Name RSAT-AD-PowerShell, GPMC
 
-# Create AD objects
 New-HciAdObjectsPreCreation -AzureStackLCMUserCredential $LCMCredentials -AsHciOUName $ClusterOUName
 
 Write-Host "AD preparation complete. OU: $ClusterOUName" -ForegroundColor Green

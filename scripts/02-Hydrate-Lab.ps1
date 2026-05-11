@@ -68,7 +68,12 @@ try {
 
         # Mount Azure Local ISO and find the image
         $isoMount = Mount-DiskImage -ImagePath $AzureLocalISOPath -PassThru
-        $isoLetter = (Get-Volume -DiskImage $isoMount).DriveLetter
+        $isoLetter = $null
+        for ($attempt = 0; $attempt -lt 10 -and -not $isoLetter; $attempt++) {
+            Start-Sleep -Seconds 1
+            $isoLetter = (Get-Volume -DiskImage $isoMount).DriveLetter
+        }
+        if (-not $isoLetter) { throw "Failed to get drive letter for mounted Azure Local ISO." }
         $installWim = "$($isoLetter):\sources\install.wim"
 
         try {

@@ -58,7 +58,8 @@ if ($subscriptions.Count -eq 1) {
 } else {
     do {
         $choice = Read-Host "Select subscription (1-$($subscriptions.Count))"
-        $idx = [int]$choice - 1
+        $idx = -1
+        if ([int]::TryParse($choice, [ref]$idx)) { $idx-- } else { $idx = -1 }
     } while ($idx -lt 0 -or $idx -ge $subscriptions.Count)
     $selectedSub = $subscriptions[$idx]
 }
@@ -100,7 +101,8 @@ Write-Host ""
 
 do {
     $regionChoice = Read-Host "Select region (1-$($supportedRegions.Count))"
-    $regionIdx = [int]$regionChoice - 1
+    $regionIdx = -1
+    if ([int]::TryParse($regionChoice, [ref]$regionIdx)) { $regionIdx-- } else { $regionIdx = -1 }
 } while ($regionIdx -lt 0 -or $regionIdx -ge $supportedRegions.Count)
 
 $selectedRegionDisplay = $supportedRegions[$regionIdx]
@@ -197,7 +199,9 @@ $replacements = @{
 
 foreach ($key in $replacements.Keys) {
     $val = $replacements[$key]
-    $content = $content -replace "(?m)^\`$$key\s*=\s*`"[^`"]*`"", "`$$key = `"$val`""
+    $pattern = "(?m)^\`$$key\s*=\s*`"[^`"]*`""
+    $literal = "`$$key = `"$val`""
+    $content = [regex]::Replace($content, $pattern, $literal.Replace('$', '$$'))
 }
 
 Set-Content -Path $configPath -Value $content -Force
