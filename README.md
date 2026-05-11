@@ -33,14 +33,19 @@ Microsoft's official zero-touch provisioning ([Simplified Machine Provisioning](
 
 ### Prerequisites
 
-- Windows Server 2025 ISO
-- Azure Stack HCI OS ISO (download from Azure Portal)
-- Azure subscription with permissions to register Arc resources
+- **Azure subscription** with permissions to register Arc resources
+- Two ISO files (the script guides you through downloading them):
+  - Windows Server 2025 evaluation ISO — from [Microsoft Evaluation Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025)
+  - Azure Local (Azure Stack HCI) ISO — from [Azure Portal](https://portal.azure.com/#view/Microsoft_Azure_StackHCI/HCIGetStarted.ReactView)
+- USB drive (32GB+ recommended)
 
 ### Option A: Full Zero-Touch (USB Boot)
 
 ```powershell
-# On any Windows machine with the ISOs:
+# Guided mode — the script tells you where to download ISOs:
+.\Create-USB.ps1 -USBDiskNumber 2
+
+# Or provide ISOs directly:
 .\Create-USB.ps1 -WindowsServerISO "D:\ISOs\WinServer2025.iso" `
                  -AzureLocalISO "D:\ISOs\AzureLocal.iso" `
                  -USBDiskNumber 2 `

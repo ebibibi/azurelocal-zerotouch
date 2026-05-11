@@ -50,15 +50,38 @@ if (-not (Test-Path $isosDir)) {
     Write-Host "Created $isosDir — place your ISO files here." -ForegroundColor Yellow
 }
 
-# Validate ISO files exist
-$missingISOs = @()
-if (-not (Test-Path $WindowsServerISOPath)) { $missingISOs += "Windows Server: $WindowsServerISOPath" }
-if (-not (Test-Path $AzureLocalISOPath))    { $missingISOs += "Azure Local: $AzureLocalISOPath" }
+# Validate ISO files and show download guide if missing
+$needWS = -not (Test-Path $WindowsServerISOPath)
+$needAL = -not (Test-Path $AzureLocalISOPath)
 
-if ($missingISOs.Count -gt 0) {
-    Write-Warning "Missing ISO files:"
-    $missingISOs | ForEach-Object { Write-Warning "  - $_" }
-    Write-Warning "Download them and update config.ps1 before running Stage 2."
+if ($needWS -or $needAL) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  ISO Download Guide" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    if ($needWS) {
+        Write-Host "[1] Windows Server 2025 Evaluation ISO" -ForegroundColor Yellow
+        Write-Host "    https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025" -ForegroundColor Green
+        Write-Host "    -> Select '64-bit edition' ISO download (registration required)" -ForegroundColor Gray
+        Write-Host "    Save to: $WindowsServerISOPath" -ForegroundColor White
+        Write-Host ""
+    }
+
+    if ($needAL) {
+        Write-Host "[2] Azure Local (Azure Stack HCI) ISO" -ForegroundColor Yellow
+        Write-Host "    https://portal.azure.com/#view/Microsoft_Azure_StackHCI/HCIGetStarted.ReactView" -ForegroundColor Green
+        Write-Host "    -> Azure subscription required, accept license terms, download English ISO" -ForegroundColor Gray
+        Write-Host "    Save to: $AzureLocalISOPath" -ForegroundColor White
+        Write-Host ""
+    }
+
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Download the ISO(s) above before running Stage 2 (Hydration)." -ForegroundColor Yellow
+    Write-Host "Press Enter to continue setup, or Ctrl+C to stop and download first..." -ForegroundColor Yellow
+    Read-Host | Out-Null
 }
 
 Write-Host "Host setup complete." -ForegroundColor Green

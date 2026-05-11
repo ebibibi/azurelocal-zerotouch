@@ -9,18 +9,28 @@
     2. Copies Azure Local ISO and deployment scripts to C:\
     3. After first login, runs the full deployment pipeline
 
+    If ISO paths are not provided, displays download instructions and waits
+    for the user to place files before proceeding.
+
     USB layout (dual-partition for UEFI compatibility):
       Partition 1: FAT32  (~1GB)  - Boot files + autounattend.xml
       Partition 2: NTFS   (rest)  - install.wim + Azure Local ISO + scripts
 .PARAMETER WindowsServerISO
-    Path to Windows Server 2025 ISO file.
+    Path to Windows Server 2025 ISO file. If omitted, defaults to C:\ISOs\WindowsServer2025.iso
+    and shows download instructions if the file is not found.
 .PARAMETER AzureLocalISO
-    Path to Azure Local (Azure Stack HCI) ISO file.
+    Path to Azure Local (Azure Stack HCI) ISO file. If omitted, defaults to C:\ISOs\AzureLocal.iso
+    and shows download instructions if the file is not found.
 .PARAMETER USBDiskNumber
     Disk number of the USB drive (from Get-Disk). Required to prevent accidents.
 .PARAMETER ConfigPath
     Path to config.ps1 with your Azure settings. If omitted, config.example.ps1 is used.
 .EXAMPLE
+    # Guided mode: shows download instructions, then creates USB
+    .\Create-USB.ps1 -USBDiskNumber 2
+
+.EXAMPLE
+    # Direct mode: provide ISOs explicitly
     .\Create-USB.ps1 -WindowsServerISO "D:\ISOs\WinServer2025.iso" `
                      -AzureLocalISO "D:\ISOs\AzureLocal.iso" `
                      -USBDiskNumber 2
@@ -28,12 +38,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [ValidateScript({ Test-Path $_ })]
     [string]$WindowsServerISO,
-
-    [Parameter(Mandatory)]
-    [ValidateScript({ Test-Path $_ })]
     [string]$AzureLocalISO,
 
     [Parameter(Mandatory)]
@@ -45,6 +50,83 @@ param(
 $ErrorActionPreference = 'Stop'
 $repoRoot = $PSScriptRoot
 
+$defaultISODir = "C:\ISOs"
+if (-not $WindowsServerISO) { $WindowsServerISO = Join-Path $defaultISODir "WindowsServer2025.iso" }
+if (-not $AzureLocalISO)    { $AzureLocalISO    = Join-Path $defaultISODir "AzureLocal.iso" }
+
+# --- ISO availability check with guided download ---
+function Show-ISODownloadGuide {
+    param([bool]$NeedWindowsServer, [bool]$NeedAzureLocal)
+
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  ISO Download Guide" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    if ($NeedWindowsServer) {
+        Write-Host "[1] Windows Server 2025 Evaluation ISO" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "    Download from Microsoft Evaluation Center:" -ForegroundColor White
+        Write-Host "    https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "    - Select '64-bit edition' ISO download" -ForegroundColor Gray
+        Write-Host "    - Registration (name/email) is required" -ForegroundColor Gray
+        Write-Host "    - 180-day evaluation, no product key needed" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "    Save to: $WindowsServerISO" -ForegroundColor White
+        Write-Host ""
+    }
+
+    if ($NeedAzureLocal) {
+        Write-Host "[2] Azure Local (Azure Stack HCI) ISO" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "    Download from Azure Portal:" -ForegroundColor White
+        Write-Host "    https://portal.azure.com/#view/Microsoft_Azure_StackHCI/HCIGetStarted.ReactView" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "    - Azure subscription required" -ForegroundColor Gray
+        Write-Host "    - Accept the license terms, then click 'Download Azure Local'" -ForegroundColor Gray
+        Write-Host "    - Select the latest version (24H2 recommended)" -ForegroundColor Gray
+        Write-Host "    - English ISO is required for MSLab compatibility" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "    Save to: $AzureLocalISO" -ForegroundColor White
+        Write-Host ""
+    }
+
+    Write-Host "========================================" -ForegroundColor Cyan
+}
+
+$needWS = -not (Test-Path $WindowsServerISO)
+$needAL = -not (Test-Path $AzureLocalISO)
+
+if ($needWS -or $needAL) {
+    if (-not (Test-Path $defaultISODir)) {
+        New-Item -Path $defaultISODir -ItemType Directory -Force | Out-Null
+    }
+
+    Show-ISODownloadGuide -NeedWindowsServer $needWS -NeedAzureLocal $needAL
+
+    Write-Host "Place the ISO file(s) at the paths shown above." -ForegroundColor White
+    Write-Host "Press Enter when ready (or Ctrl+C to cancel)..." -ForegroundColor Yellow
+    Read-Host | Out-Null
+
+    # Re-check after user says ready
+    $errors = @()
+    if (-not (Test-Path $WindowsServerISO)) {
+        $errors += "Windows Server ISO not found at: $WindowsServerISO"
+    }
+    if (-not (Test-Path $AzureLocalISO)) {
+        $errors += "Azure Local ISO not found at: $AzureLocalISO"
+    }
+    if ($errors.Count -gt 0) {
+        foreach ($e in $errors) { Write-Error $e }
+        return
+    }
+
+    Write-Host "Both ISOs found. Proceeding with USB creation." -ForegroundColor Green
+    Write-Host ""
+}
+
 # --- Safety check ---
 $usbDisk = Get-Disk -Number $USBDiskNumber
 if ($usbDisk.BusType -ne 'USB') {
@@ -53,7 +135,11 @@ if ($usbDisk.BusType -ne 'USB') {
 }
 
 $usbSizeGB = [math]::Round($usbDisk.Size / 1GB, 1)
-Write-Host "Target USB: Disk $USBDiskNumber — $($usbDisk.FriendlyName) ($($usbSizeGB) GB)" -ForegroundColor Yellow
+Write-Host "Target USB: Disk $USBDiskNumber - $($usbDisk.FriendlyName) ($($usbSizeGB) GB)" -ForegroundColor Yellow
+Write-Host "ISOs:" -ForegroundColor Yellow
+Write-Host "  Windows Server: $WindowsServerISO" -ForegroundColor Gray
+Write-Host "  Azure Local:    $AzureLocalISO" -ForegroundColor Gray
+Write-Host ""
 Write-Host "WARNING: ALL DATA ON THIS DISK WILL BE ERASED." -ForegroundColor Red
 $confirm = Read-Host "Type 'yes' to continue"
 if ($confirm -ne 'yes') {
@@ -63,7 +149,7 @@ if ($confirm -ne 'yes') {
 
 # --- Mount Windows Server ISO ---
 Write-Host "Mounting Windows Server ISO..." -ForegroundColor Cyan
-$wsISO = Mount-DiskImage -ImagePath $WindowsServerISO -PassThru
+$wsISO = Mount-DiskImage -ImagePath (Resolve-Path $WindowsServerISO).Path -PassThru
 $wsLetter = (Get-Volume -DiskImage $wsISO).DriveLetter
 $wsRoot = "$($wsLetter):\"
 
@@ -90,7 +176,6 @@ try {
     # --- Copy boot files to FAT32 partition ---
     Write-Host "Copying boot files to FAT32 partition..." -ForegroundColor Cyan
 
-    # Copy everything except sources\install.wim (too large for FAT32)
     $excludeItems = @("install.wim", "install.esd")
     robocopy "$wsRoot" "${bootLetter}:\" /E /XF $excludeItems /NFL /NDL /NJH /NJS /R:3 /W:1
 
@@ -123,14 +208,12 @@ try {
     }
     Copy-Item -Path "$repoRoot\scripts" -Destination "$payloadScripts\scripts" -Recurse -Force
 
-    # Copy user's config.ps1 if provided
     if ($ConfigPath -and (Test-Path $ConfigPath)) {
         Copy-Item -Path $ConfigPath -Destination "$payloadScripts\config.ps1" -Force
         Write-Host "  Included custom config.ps1" -ForegroundColor Gray
     }
 
     # --- Create SetupComplete.cmd ---
-    # This runs after Windows setup. It copies payload from USB/NTFS to C:\
     Write-Host "Creating SetupComplete.cmd..." -ForegroundColor Cyan
     $setupDir = "${bootLetter}:\`$OEM`$\`$`$\Setup\Scripts"
     New-Item -Path $setupDir -ItemType Directory -Force | Out-Null
