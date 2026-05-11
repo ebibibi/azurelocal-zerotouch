@@ -1,0 +1,13 @@
+# User config (contains Azure subscription details)
+config.ps1
+
+# ISO files
+*.iso
+
+# MSLab generated files
+ParentDisks/
+LAB/
+
+# Windows temp
+Thumbs.db
+desktop.ini
