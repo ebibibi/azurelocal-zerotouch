@@ -39,7 +39,18 @@ Microsoft's official zero-touch provisioning ([Simplified Machine Provisioning](
 
 ### Option A: Full Zero-Touch (USB Boot)
 
-> Coming soon — automated USB ISO creation
+```powershell
+# On any Windows machine with the ISOs:
+.\Create-USB.ps1 -WindowsServerISO "D:\ISOs\WinServer2025.iso" `
+                 -AzureLocalISO "D:\ISOs\AzureLocal.iso" `
+                 -USBDiskNumber 2 `
+                 -ConfigPath ".\config.ps1"
+
+# Then plug the USB into the target machine and boot from it.
+# Everything else is automatic.
+```
+
+> **Note:** Use `Get-Disk` to find your USB disk number. The script refuses to format non-USB disks.
 
 ### Option B: Run on Existing Windows Server
 
@@ -62,18 +73,19 @@ notepad config.ps1
 ```
 azurelocal-zerotouch/
 ├── README.md
+├── Create-USB.ps1           # USB creation tool (FAT32 boot + NTFS data)
 ├── config.example.ps1       # Configuration template (Azure sub, region, etc.)
 ├── Deploy-AzureLocal.ps1    # Main orchestrator script
 ├── LabConfig.ps1            # MSLab VM definitions (single-node Azure Local)
 ├── scripts/
 │   ├── 01-Setup-Host.ps1    # Install Hyper-V, download MSLab
-│   ├── 02-Hydrate-Lab.ps1   # MSLab hydration (ISO → VHD, create DC)
+│   ├── 02-Hydrate-Lab.ps1   # MSLab hydration (ISO → VHD, non-interactive)
 │   ├── 03-Deploy-Lab.ps1    # MSLab deploy (create VMs)
 │   ├── 04-Prepare-AD.ps1    # Active Directory prerequisites
 │   ├── 05-Register-Arc.ps1  # Azure Arc registration
 │   └── 06-Deploy-Cluster.ps1 # ARM template cluster deployment
 └── unattend/
-    └── autounattend.xml     # Windows Server 2025 unattended install
+    └── autounattend.xml     # Windows Server 2025 unattended install (UEFI)
 ```
 
 ## References
