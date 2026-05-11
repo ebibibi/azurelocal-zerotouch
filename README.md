@@ -36,49 +36,36 @@ Microsoft's official zero-touch provisioning ([Simplified Machine Provisioning](
 
 ## Quick Start
 
+```powershell
+git clone https://github.com/ebibibi/azurelocal-zerotouch.git
+cd azurelocal-zerotouch
+.\Start.ps1
+```
+
+That's it. The script guides you through everything — language selection, ISO downloads, configuration, and deployment. Supports English and Japanese.
+
+### Two Modes
+
+| Mode | Use case | What happens |
+|------|----------|-------------|
+| **A) USB Creation** | Bare-metal machine with no OS | Creates a bootable USB → plug in and boot → fully automatic |
+| **B) Direct Deploy** | Windows Server already installed | Runs the deployment pipeline on this machine |
+
 ### Prerequisites
 
 - **Azure subscription** with Contributor + User Access Administrator permissions
-- Two ISO files (the script guides you through downloading them):
-  - Windows Server 2025 evaluation ISO — from [Microsoft Evaluation Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025)
-  - Azure Local (Azure Stack HCI) ISO — from [Azure Portal](https://portal.azure.com/#view/Microsoft_Azure_StackHCI/HCIGetStarted.ReactView)
-- USB drive (32GB+ recommended)
-
-### Option A: Full Zero-Touch (USB Boot)
-
-```powershell
-# 1. Create bootable USB (guided — tells you where to download ISOs)
-.\Create-USB.ps1 -USBDiskNumber 2
-
-# 2. Plug USB into target machine and boot from it
-# 3. Phase 1 runs automatically (OS install → Hyper-V → MSLab → AD)
-# 4. When prompted, sign in to Azure via browser (one time only)
-# 5. Phase 3 runs automatically (Arc → cluster deploy → done!)
-```
-
-> **Note:** Use `Get-Disk` to find your USB disk number. The script refuses to format non-USB disks.
-
-### Option B: Run on Existing Windows Server
-
-```powershell
-# 1. Clone this repo
-git clone https://github.com/ebibibi/azurelocal-zerotouch.git
-cd azurelocal-zerotouch
-
-# 2. Copy config template (Azure settings are auto-configured during deployment)
-cp config.example.ps1 config.ps1
-
-# 3. Place ISOs in C:\ISOs (or the script tells you where to download them)
-
-# 4. Run — handles everything including Azure sign-in
-.\Deploy-AzureLocal.ps1
-```
+- Two ISO files (the script tells you where to download them):
+  - Windows Server 2025 evaluation ISO — [Microsoft Evaluation Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2025)
+  - Azure Local (Azure Stack HCI) ISO — [Azure Portal](https://portal.azure.com/#view/Microsoft_Azure_StackHCI/HCIGetStarted.ReactView)
+- USB drive (32GB+) — only for Mode A
+- 64GB+ RAM machine with Hyper-V support
 
 ## Project Structure
 
 ```
 azurelocal-zerotouch/
 ├── README.md
+├── Start.ps1                   # Entry point — run this first (bilingual guide)
 ├── Create-USB.ps1              # USB creation tool (guided ISO download)
 ├── config.example.ps1          # Config template (Azure settings auto-populated)
 ├── Deploy-AzureLocal.ps1       # Main orchestrator (Phase 1 → 2 → 3)
