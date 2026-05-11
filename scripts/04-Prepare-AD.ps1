@@ -14,7 +14,10 @@ Write-Host "Creating Active Directory objects for Azure Local..." -ForegroundCol
 Write-Host "Installing prerequisites..." -ForegroundColor Gray
 Install-PackageProvider -Name NuGet -Force -ErrorAction SilentlyContinue
 Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
-Install-WindowsFeature -Name RSAT-AD-PowerShell, GPMC
+$featureResult = Install-WindowsFeature -Name RSAT-AD-PowerShell, GPMC
+if (-not $featureResult.Success) {
+    throw "Failed to install Windows features: RSAT-AD-PowerShell, GPMC"
+}
 
 New-HciAdObjectsPreCreation -AzureStackLCMUserCredential $LCMCredentials -AsHciOUName $ClusterOUName
 

@@ -188,7 +188,7 @@ if (-not (Get-AzResourceGroup -Name $selectedRG -ErrorAction SilentlyContinue)) 
 Write-Host ""
 Write-Host "Saving Azure settings to config.ps1..." -ForegroundColor Cyan
 
-$content = Get-Content $configPath -Raw
+$content = Get-Content $configPath -Raw -Encoding UTF8
 
 $replacements = @{
     'AzureSubscriptionId' = $selectedSubscriptionId
@@ -204,7 +204,7 @@ foreach ($key in $replacements.Keys) {
     $content = [regex]::Replace($content, $pattern, $literal.Replace('$', '$$'))
 }
 
-Set-Content -Path $configPath -Value $content -Force
+Set-Content -Path $configPath -Value $content -Force -Encoding UTF8
 
 # Reload config so subsequent stages see the new values
 . $configPath

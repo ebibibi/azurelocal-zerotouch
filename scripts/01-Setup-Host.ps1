@@ -36,7 +36,13 @@ if (-not (Test-Path (Join-Path $MSLabPath "1_Prereq.ps1"))) {
     Write-Host "Downloading MSLab..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri "https://aka.ms/mslab/download" -OutFile $mslabZip
     Expand-Archive -Path $mslabZip -DestinationPath $MSLabPath -Force
-    Get-ChildItem -Path $MSLabPath | Unblock-File
+    # MSLab zip may contain a single root folder — flatten it
+    $extractedRoot = Get-ChildItem -Path $MSLabPath -Directory | Select-Object -First 1
+    if ($extractedRoot -and -not (Test-Path (Join-Path $MSLabPath "1_Prereq.ps1"))) {
+        Get-ChildItem -Path $extractedRoot.FullName | Move-Item -Destination $MSLabPath -Force
+        Remove-Item $extractedRoot.FullName -Force
+    }
+    Get-ChildItem -Path $MSLabPath -Recurse | Unblock-File
     Remove-Item $mslabZip -Force
     Write-Host "MSLab downloaded to $MSLabPath" -ForegroundColor Green
 } else {

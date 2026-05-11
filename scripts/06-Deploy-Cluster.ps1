@@ -43,8 +43,8 @@ Management:
     Domain:           corp.contoso.com
     Computer prefix:  $ClusterName
     OU:               $ClusterOUName
-    Deployment user:  $LCMUserName / $LCMPassword
-    Local admin:      Administrator / $LocalAdminPassword
+    Deployment user:  $LCMUserName / (see config.ps1)
+    Local admin:      Administrator / (see config.ps1)
 
 Security:
     Customized — unselect BitLocker for data volumes (saves space in lab)

@@ -168,12 +168,22 @@ try {
     # Partition 1: FAT32 boot (1GB)
     $bootPart = New-Partition -DiskNumber $USBDiskNumber -Size 1GB -AssignDriveLetter
     Format-Volume -Partition $bootPart -FileSystem FAT32 -NewFileSystemLabel "BOOT" -Force | Out-Null
-    $bootLetter = $bootPart.DriveLetter
+    $bootLetter = $null
+    for ($attempt = 0; $attempt -lt 10 -and -not $bootLetter; $attempt++) {
+        Start-Sleep -Seconds 1
+        $bootLetter = (Get-Partition -DiskNumber $USBDiskNumber -PartitionNumber $bootPart.PartitionNumber).DriveLetter
+    }
+    if (-not $bootLetter) { throw "Failed to get drive letter for boot partition." }
 
     # Partition 2: NTFS data (remaining space)
     $dataPart = New-Partition -DiskNumber $USBDiskNumber -UseMaximumSize -AssignDriveLetter
     Format-Volume -Partition $dataPart -FileSystem NTFS -NewFileSystemLabel "ALDATA" -Force | Out-Null
-    $dataLetter = $dataPart.DriveLetter
+    $dataLetter = $null
+    for ($attempt = 0; $attempt -lt 10 -and -not $dataLetter; $attempt++) {
+        Start-Sleep -Seconds 1
+        $dataLetter = (Get-Partition -DiskNumber $USBDiskNumber -PartitionNumber $dataPart.PartitionNumber).DriveLetter
+    }
+    if (-not $dataLetter) { throw "Failed to get drive letter for data partition." }
 
     Write-Host "  Boot: ${bootLetter}:\ (FAT32)" -ForegroundColor Gray
     Write-Host "  Data: ${dataLetter}:\ (NTFS)" -ForegroundColor Gray
@@ -183,6 +193,8 @@ try {
 
     $excludeItems = @("install.wim", "install.esd")
     robocopy "$wsRoot" "${bootLetter}:\" /E /XF $excludeItems /NFL /NDL /NJH /NJS /R:3 /W:1
+    if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit code $LASTEXITCODE" }
+    $global:LASTEXITCODE = 0
 
     # --- Copy install.wim to NTFS partition ---
     Write-Host "Copying install.wim to NTFS partition (this may take a few minutes)..." -ForegroundColor Cyan
@@ -236,11 +248,11 @@ for %%d in (D E F G H I J K L) do (
         xcopy "%%d:\payload\azurelocal-zerotouch" "C:\azurelocal-zerotouch\" /E /I /Y
         xcopy "%%d:\payload\ISOs" "C:\ISOs\" /E /I /Y
         echo Payload copied. Deployment will start after auto-logon.
-        goto :done
+        exit /b 0
     )
 )
-echo WARNING: Could not find payload partition.
-:done
+echo ERROR: Could not find payload partition. Deployment cannot proceed.
+exit /b 1
 '@
     $setupCompleteContent | Set-Content -Path "$setupDir\SetupComplete.cmd" -Encoding ASCII
 

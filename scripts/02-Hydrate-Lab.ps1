@@ -97,14 +97,12 @@ try {
         Write-Host "Azure Local parent disk created: $azlocalVHD" -ForegroundColor Green
     }
 
-    # --- Phase D: Restore our LabConfig ---
-    # Copy our parameterized LabConfig back (Phase B overwrote it)
+} finally {
+    # Always restore our LabConfig even if earlier stages failed
     $ourLabConfig = Join-Path $PSScriptRoot "..\LabConfig.ps1"
     $ourConfig    = Join-Path $PSScriptRoot "..\config.ps1"
-    Copy-Item -Path $ourLabConfig -Destination "$MSLabPath\LabConfig.ps1" -Force
-    Copy-Item -Path $ourConfig    -Destination "$MSLabPath\config.ps1" -Force
-
-} finally {
+    Copy-Item -Path $ourLabConfig -Destination "$MSLabPath\LabConfig.ps1" -Force -ErrorAction SilentlyContinue
+    Copy-Item -Path $ourConfig    -Destination "$MSLabPath\config.ps1"    -Force -ErrorAction SilentlyContinue
     Pop-Location
 }
 

@@ -2,8 +2,13 @@
 # Stage 5: Register Azure Local nodes with Azure Arc
 # Assumes Azure session is already established by Setup-AzureConfig.ps1
 
+$ErrorActionPreference = 'Stop'
+
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
+
+if (-not $ClusterName) { throw "ClusterName is not set in config.ps1" }
+if ($NodeCount -lt 1)  { throw "NodeCount must be >= 1 in config.ps1" }
 
 $Servers = 1..$NodeCount | ForEach-Object { "${ClusterName}Node$_" }
 
@@ -12,7 +17,8 @@ $NodeCredentials = New-Object System.Management.Automation.PSCredential ("Admini
 
 # --- Network prerequisites on nodes ---
 Write-Host "Configuring node network (single gateway, static IP)..." -ForegroundColor Cyan
-Invoke-Command -ComputerName $Servers -ScriptBlock {
+Invoke-Command -ComputerName $Servers -ErrorAction Stop -ScriptBlock {
+    $ErrorActionPreference = 'Stop'
     Get-NetIPConfiguration |
         Where-Object IPV4defaultGateway |
         Get-NetAdapter |
@@ -44,11 +50,12 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 # --- Arc Registration ---
 Write-Host "Registering nodes with Azure Arc..." -ForegroundColor Cyan
-$armtoken = (Get-AzAccessToken).Token
-if ($armtoken -is [System.Security.SecureString]) {
-    $armtoken = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
-        [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($armtoken))
-}
+$tokenObj = Get-AzAccessToken -ErrorAction Stop
+$armtoken = if ($tokenObj.Token -is [System.Security.SecureString]) {
+    [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($tokenObj.Token))
+} else { $tokenObj.Token }
+if (-not $armtoken) { throw "Failed to acquire ARM access token." }
 $accountId = (Get-AzContext).Account.Id
 
 Invoke-Command -ComputerName $Servers -ScriptBlock {
