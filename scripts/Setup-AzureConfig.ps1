@@ -4,6 +4,8 @@
 # Authenticates to Azure, lets the user select subscription/region,
 # validates permissions, registers resource providers, and saves config.
 
+$ErrorActionPreference = 'Stop'
+
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
 
@@ -170,7 +172,7 @@ foreach ($p in $providers) {
     $state = (Get-AzResourceProvider -ProviderNamespace $p -ErrorAction SilentlyContinue).RegistrationState
     if ($state -ne 'Registered') {
         Write-Host "  Registering $p..." -ForegroundColor Gray
-        Register-AzResourceProvider -ProviderNamespace $p | Out-Null
+        Register-AzResourceProvider -ProviderNamespace $p -ErrorAction Stop | Out-Null
     }
 }
 Write-Host "  Resource providers registered." -ForegroundColor Green

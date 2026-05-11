@@ -13,6 +13,7 @@ if (-not $AzureSubscriptionId)  { throw "AzureSubscriptionId is not set in confi
 if (-not $AzureTenantId)        { throw "AzureTenantId is not set in config.ps1" }
 if (-not $AzureRegion)          { throw "AzureRegion is not set in config.ps1" }
 if (-not $ResourceGroupName)    { throw "ResourceGroupName is not set in config.ps1" }
+if (-not $LocalAdminPassword)   { throw "LocalAdminPassword is not set in config.ps1" }
 
 $Servers = 1..$NodeCount | ForEach-Object { "${ClusterName}Node$_" }
 
