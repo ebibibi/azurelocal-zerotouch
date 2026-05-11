@@ -94,7 +94,7 @@
                processorArchitecture="amd64" language="neutral"
                publicKeyToken="31bf3856ad364e35" versionScope="nonSxS">
       <ComputerName>ALHOST</ComputerName>
-      <TimeZone>Tokyo Standard Time</TimeZone>
+      <TimeZone>UTC</TimeZone>
     </component>
 
     <component name="Microsoft-Windows-TerminalServices-LocalSessionManager"
@@ -149,7 +149,7 @@
       <FirstLogonCommands>
         <SynchronousCommand wcm:action="add">
           <Order>1</Order>
-          <CommandLine>powershell.exe -ExecutionPolicy Bypass -File C:\azurelocal-zerotouch\Deploy-AzureLocal.ps1</CommandLine>
+          <CommandLine>powershell.exe -ExecutionPolicy Bypass -Command "$target = 'C:\azurelocal-zerotouch\Deploy-AzureLocal.ps1'; for ($i = 0; $i -lt 60; $i++) { if (Test-Path $target) { &amp; $target; exit $LASTEXITCODE } Start-Sleep -Seconds 5 }; Write-Error 'Timed out waiting for payload'; exit 1"</CommandLine>
           <Description>Azure Local Zero-Touch Deployment</Description>
           <RequiresUserInput>false</RequiresUserInput>
         </SynchronousCommand>

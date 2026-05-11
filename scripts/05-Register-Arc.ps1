@@ -43,12 +43,14 @@ Invoke-Command -ComputerName $Servers -ErrorAction Stop -ScriptBlock {
         New-NetIPAddress -InterfaceIndex $Index -AddressFamily IPv4 `
             -IPAddress $IPAddr.IPAddress -PrefixLength $IPAddr.PrefixLength `
             -DefaultGateway $IPConf.IPv4DefaultGateway.NextHop -ErrorAction SilentlyContinue
-        Set-DnsClientServerAddress -InterfaceIndex $Index -ServerAddresses $DNSAddrs
+        if ($DNSAddrs.Count -gt 0) {
+            Set-DnsClientServerAddress -InterfaceIndex $Index -ServerAddresses $DNSAddrs
+        }
     }
 } -Credential $NodeCredentials
 
 Write-Host "Setting node administrator passwords..." -ForegroundColor Cyan
-Invoke-Command -ComputerName $Servers -ScriptBlock {
+Invoke-Command -ComputerName $Servers -ErrorAction Stop -ScriptBlock {
     Set-LocalUser -Name Administrator -AccountNeverExpires `
         -Password (ConvertTo-SecureString $using:LocalAdminPassword -AsPlainText -Force)
 } -Credential $NodeCredentials
@@ -72,7 +74,7 @@ $armtoken = if ($tokenObj.Token -is [System.Security.SecureString]) {
 if (-not $armtoken) { throw "Failed to acquire ARM access token." }
 $accountId = (Get-AzContext).Account.Id
 
-Invoke-Command -ComputerName $Servers -ScriptBlock {
+Invoke-Command -ComputerName $Servers -ErrorAction Stop -ScriptBlock {
     Invoke-AzStackHciArcInitialization `
         -SubscriptionID $using:AzureSubscriptionId `
         -ResourceGroup $using:ResourceGroupName `
