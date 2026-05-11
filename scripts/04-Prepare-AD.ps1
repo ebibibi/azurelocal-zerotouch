@@ -6,6 +6,10 @@ $ErrorActionPreference = 'Stop'
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
 
+if (-not $LCMUserName)   { throw "LCMUserName is not set in config.ps1" }
+if (-not $LCMPassword)   { throw "LCMPassword is not set in config.ps1" }
+if (-not $ClusterOUName) { throw "ClusterOUName is not set in config.ps1" }
+
 $SecuredLCMPassword = ConvertTo-SecureString $LCMPassword -AsPlainText -Force
 $LCMCredentials = New-Object System.Management.Automation.PSCredential ($LCMUserName, $SecuredLCMPassword)
 

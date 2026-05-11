@@ -2,6 +2,8 @@
 # Stage 2: MSLab Hydration — Convert ISOs to VHDs and create Domain Controller
 # Fully non-interactive: uses ServerISOFolder and direct Convert-WindowsImage calls.
 
+$ErrorActionPreference = 'Stop'
+
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
 

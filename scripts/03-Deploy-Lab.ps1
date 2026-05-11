@@ -1,6 +1,8 @@
 #Requires -RunAsAdministrator
 # Stage 3: Deploy Lab — Create VMs from MSLab LabConfig
 
+$ErrorActionPreference = 'Stop'
+
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
 

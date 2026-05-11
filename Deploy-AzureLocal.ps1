@@ -115,8 +115,9 @@ if (-not $SkipAzureSetup) {
     . $configPath
 } else {
     Write-Host "[Azure Setup] Skipped." -ForegroundColor Yellow
-    if (-not $AzureSubscriptionId) {
-        Write-Error "Azure settings are empty in config.ps1. Run without -SkipAzureSetup or fill in manually."
+    if (-not $AzureSubscriptionId -or -not $AzureTenantId -or
+        -not $AzureRegion -or -not $ResourceGroupName) {
+        Write-Error "Azure settings incomplete in config.ps1. All of AzureSubscriptionId, AzureTenantId, AzureRegion, ResourceGroupName must be set."
         return
     }
 }

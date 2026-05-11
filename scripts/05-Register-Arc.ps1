@@ -7,8 +7,12 @@ $ErrorActionPreference = 'Stop'
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
 
-if (-not $ClusterName) { throw "ClusterName is not set in config.ps1" }
-if ($NodeCount -lt 1)  { throw "NodeCount must be >= 1 in config.ps1" }
+if (-not $ClusterName)          { throw "ClusterName is not set in config.ps1" }
+if ($NodeCount -lt 1)           { throw "NodeCount must be >= 1 in config.ps1" }
+if (-not $AzureSubscriptionId)  { throw "AzureSubscriptionId is not set in config.ps1" }
+if (-not $AzureTenantId)        { throw "AzureTenantId is not set in config.ps1" }
+if (-not $AzureRegion)          { throw "AzureRegion is not set in config.ps1" }
+if (-not $ResourceGroupName)    { throw "ResourceGroupName is not set in config.ps1" }
 
 $Servers = 1..$NodeCount | ForEach-Object { "${ClusterName}Node$_" }
 
@@ -27,7 +31,8 @@ Invoke-Command -ComputerName $Servers -ErrorAction Stop -ScriptBlock {
         Set-NetIPInterface -Dhcp Disabled
 
     $InterfaceAlias = (Get-NetIPAddress -AddressFamily IPv4 |
-        Where-Object { $_.IPAddress -notlike "169*" -and $_.PrefixOrigin -eq "DHCP" }).InterfaceAlias
+        Where-Object { $_.IPAddress -notlike "169*" -and $_.PrefixOrigin -eq "DHCP" } |
+        Select-Object -First 1 -ExpandProperty InterfaceAlias)
     if ($InterfaceAlias) {
         $IPConf   = Get-NetIPConfiguration -InterfaceAlias $InterfaceAlias
         $IPAddr   = Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias $InterfaceAlias
@@ -46,6 +51,15 @@ Write-Host "Setting node administrator passwords..." -ForegroundColor Cyan
 Invoke-Command -ComputerName $Servers -ScriptBlock {
     Set-LocalUser -Name Administrator -AccountNeverExpires `
         -Password (ConvertTo-SecureString $using:LocalAdminPassword -AsPlainText -Force)
+} -Credential $NodeCredentials
+
+# --- Ensure Arc module is available on nodes ---
+Write-Host "Checking Arc module on nodes..." -ForegroundColor Cyan
+Invoke-Command -ComputerName $Servers -ErrorAction Stop -ScriptBlock {
+    if (-not (Get-Command Invoke-AzStackHciArcInitialization -ErrorAction SilentlyContinue)) {
+        Install-PackageProvider -Name NuGet -Force -ErrorAction SilentlyContinue
+        Install-Module -Name Az.StackHCI -Force -AllowClobber -ErrorAction Stop
+    }
 } -Credential $NodeCredentials
 
 # --- Arc Registration ---
