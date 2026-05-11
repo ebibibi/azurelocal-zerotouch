@@ -1,58 +1,18 @@
 #Requires -RunAsAdministrator
 # Stage 5: Register Azure Local nodes with Azure Arc
+# Assumes Azure session is already established by Setup-AzureConfig.ps1
 
 $configPath = Join-Path $PSScriptRoot "..\config.ps1"
 . $configPath
 
 $Servers = 1..$NodeCount | ForEach-Object { "${ClusterName}Node$_" }
 
-# Build credentials for node access
 $SecuredNodePassword = ConvertTo-SecureString $LocalAdminPassword -AsPlainText -Force
 $NodeCredentials = New-Object System.Management.Automation.PSCredential ("Administrator", $SecuredNodePassword)
-
-# --- Azure Login ---
-Write-Host "Installing Azure PowerShell modules..." -ForegroundColor Cyan
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -ErrorAction SilentlyContinue
-if (-not (Get-InstalledModule -Name Az.Accounts -ErrorAction SilentlyContinue)) {
-    Install-Module -Name Az.Accounts -Force
-}
-if (-not (Get-InstalledModule -Name Az.Resources -ErrorAction SilentlyContinue)) {
-    Install-Module -Name Az.Resources -Force
-}
-
-Write-Host "Logging in to Azure (device authentication)..." -ForegroundColor Cyan
-Connect-AzAccount -UseDeviceAuthentication
-Set-AzContext -Subscription $AzureSubscriptionId
-
-# --- Resource Group ---
-if (-not (Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue)) {
-    Write-Host "Creating resource group: $ResourceGroupName" -ForegroundColor Cyan
-    New-AzResourceGroup -Name $ResourceGroupName -Location $AzureRegion
-}
-
-# --- Register Resource Providers ---
-Write-Host "Registering Azure resource providers..." -ForegroundColor Cyan
-$providers = @(
-    "Microsoft.HybridCompute"
-    "Microsoft.GuestConfiguration"
-    "Microsoft.HybridConnectivity"
-    "Microsoft.AzureStackHCI"
-    "Microsoft.Kubernetes"
-    "Microsoft.KubernetesConfiguration"
-    "Microsoft.ExtendedLocation"
-    "Microsoft.ResourceConnector"
-    "Microsoft.HybridContainerService"
-    "Microsoft.Attestation"
-    "Microsoft.Storage"
-    "Microsoft.Insights"
-    "Microsoft.AzureArcData"
-)
-$providers | ForEach-Object { Register-AzResourceProvider -ProviderNamespace $_ }
 
 # --- Network prerequisites on nodes ---
 Write-Host "Configuring node network (single gateway, static IP)..." -ForegroundColor Cyan
 Invoke-Command -ComputerName $Servers -ScriptBlock {
-    # Ensure only one gateway
     Get-NetIPConfiguration |
         Where-Object IPV4defaultGateway |
         Get-NetAdapter |
@@ -60,7 +20,6 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
         Select-Object -Skip 1 |
         Set-NetIPInterface -Dhcp Disabled
 
-    # Convert DHCP to static
     $InterfaceAlias = (Get-NetIPAddress -AddressFamily IPv4 |
         Where-Object { $_.IPAddress -notlike "169*" -and $_.PrefixOrigin -eq "DHCP" }).InterfaceAlias
     if ($InterfaceAlias) {
@@ -77,7 +36,6 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
     }
 } -Credential $NodeCredentials
 
-# Set complex password on nodes
 Write-Host "Setting node administrator passwords..." -ForegroundColor Cyan
 Invoke-Command -ComputerName $Servers -ScriptBlock {
     Set-LocalUser -Name Administrator -AccountNeverExpires `

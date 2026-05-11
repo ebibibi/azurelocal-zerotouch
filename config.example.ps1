@@ -1,11 +1,9 @@
 # Azure Local Zero-Touch Lab Configuration
-# Copy this file to config.ps1 and fill in your values.
+# Copy this file to config.ps1 before deployment.
 
-# --- Azure Settings ---
-$AzureSubscriptionId = ""          # Your Azure subscription ID
-$AzureRegion         = "eastus"    # Azure region for Arc registration
-$AzureTenantId       = ""          # Your Entra ID tenant ID
-$ResourceGroupName   = "rg-azurelocal-lab"
+# =============================================================================
+# LOCAL SETTINGS — Edit these before deployment if needed
+# =============================================================================
 
 # --- Cluster Settings ---
 $ClusterName         = "ALab01"
@@ -18,7 +16,6 @@ $LocalAdminPassword  = "LS1setup!LS1setup!"
 $MSLabPath           = "C:\MSLab"
 
 # --- ISO Paths ---
-# Place your ISOs in C:\ISOs or update these paths
 $WindowsServerISOPath = "C:\ISOs\WindowsServer2025.iso"
 $AzureLocalISOPath    = "C:\ISOs\AzureLocal.iso"
 
@@ -34,3 +31,12 @@ $NodeCount           = 1            # Single-node deployment (set to 2 for dual-
 $NodeMemoryGB        = 20           # RAM per node in GB
 $NodeHDDCount        = 4            # Number of virtual HDDs per node
 $NodeHDDSizeGB       = 1024         # Size of each virtual HDD in GB
+
+# =============================================================================
+# AZURE SETTINGS — Auto-populated by Setup-AzureConfig.ps1 during deployment
+# You do NOT need to fill these in manually.
+# =============================================================================
+$AzureSubscriptionId = ""
+$AzureTenantId       = ""
+$AzureRegion         = ""
+$ResourceGroupName   = "rg-azurelocal-lab"
